@@ -3,7 +3,7 @@ import numpy as np
 from multiprocessing import Pool
 
 
-class CriteriaHandler:
+class CriterionHandler:
     """Обработчик критерия эффективности службы поддержки"""
 
     def __init__(self, users_df, support_df):
@@ -154,7 +154,7 @@ class CriteriaHandler:
     def users_handler(self):
         """Функция параллельно обрабатывает данные всех пользователей
 
-        Алгоритм работы:
+        На выходе получаем список кортежей вида: (оценка, дельта)
 
         """
 
@@ -166,6 +166,7 @@ class CriteriaHandler:
         pool.close()  # закрываем бассейн, он нам больше не нужен
         pool.join()  # возвращаемся в реальный мир
 
+        # Печатаем кол-во записей (пользователей), которые обработали
         user_count = len(pd.unique(self.users_df['user_id']))
         print('Все пользователи: ', user_count)
 
@@ -173,6 +174,7 @@ class CriteriaHandler:
 
     @staticmethod
     def transform_metrics_to_dict(metrics_list):
+        """Преобразуем список кортежей (оценка, дельта) в словарь с ключами-оценками"""
 
         metrics_dict = {}
         for i in range(len(metrics_list)):
@@ -186,7 +188,9 @@ class CriteriaHandler:
 
         return metrics_dict
 
-class HandlerOfUsersBigData(CriteriaHandler):
+
+class HandlerOfLostUsersAndItems(CriterionHandler):
+    """Обработчик потерянных пользователей и объявлений"""
 
     def solve_metrics(self, interval_list):
         """Функция считает метрики пользователя до и после"""
