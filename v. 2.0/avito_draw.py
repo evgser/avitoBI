@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import copy
+import operator
 
 
 class AvitoDraw:
@@ -77,7 +78,7 @@ class AvitoDraw:
 
         return all_data
 
-    def get_random_average(self, count=100, random=True):
+    def get_random_average(self, count=10, random=True):
         """ Заполняем данные рандомными значениями count раз """
 
         delta_list = [[] for i in range(5)]
@@ -175,4 +176,69 @@ class AvitoDraw:
         plt.setp(ax, xticks=[y + 1 for y in range(len(all_data))],
                  xticklabels=self.short_rate)
 
+        plt.show()
+
+
+class AvitoDraw2:
+
+    def __init__(self, all_data):
+        self.all_data = all_data
+
+    def lost_users_and_items_calculation(self):
+        """ Функция считает количество всех потерянных объявлений и пользователей и выводит их в консоль """
+        lost_users = 0
+        lost_items = 0
+        for i in range(len(self.all_data)):
+
+            if self.all_data[i][1] == "True":
+                lost_users += 1
+            lost_items += float(self.all_data[i][0])
+
+        print("Количество потерянных объявлений: ", lost_items)
+        print("Количество потерянных пользователей: ", lost_users)
+
+    def data_handler_category(self):
+        """"""
+
+        users_dict = {}
+        unhappy_users_dict = {}
+        lost_users_dict = {}
+        lost_items_dict = {}
+        for i in range(len(self.all_data)):
+
+            # Считаем количество людей по категориям
+            if self.all_data[i][2] not in users_dict.keys():
+                users_dict.update({self.all_data[i][2]: 1})
+            else:
+                users_dict.update({self.all_data[i][2]: users_dict[self.all_data[i][2]] + 1})
+
+            # Считаем количество недовольных людей по категориям
+            if float(self.all_data[i][0]) > 0:
+                if self.all_data[i][2] not in unhappy_users_dict.keys():
+                    unhappy_users_dict.update({self.all_data[i][2]: 1})
+                else:
+                    unhappy_users_dict.update({self.all_data[i][2]: unhappy_users_dict[self.all_data[i][2]] + 1})
+
+            # Cчитаем количество потерянных пользователей
+            if self.all_data[i][1]:
+                pass
+
+
+        self.plot(unhappy_users_dict)
+        print(lost_users_dict)
+
+    def plot(self, data_dict):
+
+        fig, ax = plt.subplots()
+        fig.set_size_inches(7, 3, forward=True)
+
+        sorted_list = sorted(data_dict.items(), key=operator.itemgetter(1))
+
+        group_names = list(sorted_list[i][0] for i in range(len(sorted_list)))
+        group_data = list(sorted_list[i][1] for i in range(len(sorted_list)))
+
+        ax.barh(group_names, group_data, height=0.4)
+
+        ax.set_xlabel('Performance')
+        ax.set_title('How fast do you want to go today?')
         plt.show()

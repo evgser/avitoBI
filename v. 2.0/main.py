@@ -2,12 +2,15 @@ import pandas as pd
 import avito_handler as ah
 import avito_draw as ad
 from datetime import datetime
+import csv
 
 
 if __name__ == '__main__':
 
     criterion_file = 'data_support.txt'
-    lost_users_and_items_file = 'data_lost_users_and_items.txt'
+    criterion_file_tmp = 'data_support_tmp.txt'
+    lost_users_and_items_file = 'data_lost_users_and_items.csv'
+    lost_users_and_items_file_tmp = 'data_lost_users_and_items_tmp.csv'
 
     def criterion_handler(users_file, support_file, criterion_file):
 
@@ -54,11 +57,46 @@ if __name__ == '__main__':
         # Рисуем график средних дельта-значений по рандомным выборкам и их их усредненных значений
         draw.plot_multi_average(count)
 
-    def lost_users_and_items_handler(users_file, support_file, lost_users_and_items_file):
-        pass
+    def lost_users_and_items_handler(users_file, support_file, lost_users_and_items_file, avg_delta):
+
+        # Создаём DataFrame для пользователей и их обращений в поддержку
+        users_df = pd.read_csv(users_file)
+        support_df = pd.read_csv(support_file)
+
+        # Создаём класс обработки критерия эффективности службы поддержки и записываем данные в словарь
+        handler = ah.HandlerOfLostUsersAndItems(users_df, support_df)
+        # Задаём величину, от которой будем считать объявления потерянными
+        handler.set_avg_delta(avg_delta)
+
+        # Считаем метрики пользователя
+        metric_list = handler.users_handler()
+
+        # Записываем метрики в csv файл
+        with open(lost_users_and_items_file, "w", newline="", encoding='UTF-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(['lost_items', 'lost_user', 'ticket_category', 'ticket_subcategory'])
+            writer.writerows(metric_list)
 
     def lost_users_and_items_draw(lost_users_and_items_file):
-        pass
+
+        # Инициализация списка для хранения метрик пользователей
+        data_list = []
+
+        # Чтение и заполнение списка метриками пользователей
+        with open(lost_users_and_items_file, "r", newline="", encoding='UTF-8') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if reader.line_num != 1:
+                    data_list.append([row[i] for i in range(4)])
+
+        # Создание класса для отрисовки графиков
+        draw = ad.AvitoDraw2(data_list)
+
+        # Получаем потери в цифрах
+        draw.lost_users_and_items_calculation()
+
+        # тест
+        draw.data_handler_category()
 
 
     print("Выберите действие")
@@ -78,10 +116,11 @@ if __name__ == '__main__':
     print('\n')
     print("Время начала работы программы: ", datetime.now(), '\n')
 
+    # Часть 1
     if choice == 1:
         criterion_handler('csv_db/part 1/3.0.0.csv', 'csv_db/part 1/2.0.0.csv', criterion_file)
     if choice == 2:
-        criterion_handler('csv_db/part 1/3.0.0 tmp.csv', 'csv_db/part 1/2.0.0 tmp.csv', criterion_file)
+        criterion_handler('csv_db/part 1/3.0.0 tmp.csv', 'csv_db/part 1/2.0.0 tmp.csv', criterion_file_tmp)
     if choice == 3:
 
         print("Сколько рандомных выборок построить?")
@@ -90,12 +129,16 @@ if __name__ == '__main__':
 
         criterion_draw(criterion_file, count)
 
+    # Часть 2
+    # Задаём значение, относительно которого мы будем принимать решение о эффективности службы поддержки
+    avg_delta = -0.5573
+
     if choice == 4:
         lost_users_and_items_handler('csv_db/part 2/3.1.1.csv', 'csv_db/part 2/2.1.1.csv',
-                                     lost_users_and_items_file)
+                                     lost_users_and_items_file, avg_delta)
     if choice == 5:
         lost_users_and_items_handler('csv_db/part 2/3.1.1 tmp.csv', 'csv_db/part 2/2.1.1 tmp.csv',
-                                     lost_users_and_items_file)
+                                     lost_users_and_items_file_tmp, avg_delta)
     if choice == 6:
         lost_users_and_items_draw(lost_users_and_items_file)
 

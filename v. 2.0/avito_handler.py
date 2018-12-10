@@ -144,7 +144,7 @@ class CriterionHandler:
         # Считаем кол-во объявлений пользователя за месяц
         count_month_dict = self.item_counter(user_id)
 
-        # Преобразуем данные в временной ряд
+        # Преобразуем данные во временной ряд
         interval_list = self.convert_to_ts(count_month_dict, support_time)
 
         delta = self.metrics_calculation(interval_list)
@@ -154,7 +154,11 @@ class CriterionHandler:
     def users_handler(self):
         """Функция параллельно обрабатывает данные всех пользователей
 
+        Для оценки критерия эффектиновности:
         На выходе получаем список кортежей вида: (оценка, дельта)
+
+        Для подсчёта урона Авито:
+        На выходе полчаем список кортежей вида: (дельта, категория, подкатегория, потеря пользователя)
 
         """
 
@@ -192,7 +196,11 @@ class CriterionHandler:
 class HandlerOfLostUsersAndItems(CriterionHandler):
     """Обработчик потерянных пользователей и объявлений"""
 
-    def solve_metrics(self, interval_list):
+    def set_avg_delta(self, avg_delta):
+        self.avg_delta = avg_delta
+
+    @staticmethod
+    def metrics_calculation(interval_list):
         """Функция считает метрики пользователя до и после"""
 
         # Инициализируем метрики до и после нулевыми значениями, если попадется пустой временной ряд
@@ -210,72 +218,53 @@ class HandlerOfLostUsersAndItems(CriterionHandler):
             # Считаем среднее значение кол-ва объявлений после
             avg_after = np.average(interval_list[1])
 
-        # Считаем дельту медиан и среднего
+        # Считаем дельту среднего
         delta_avg = avg_after - avg_before
 
         return delta_avg, avg_after
 
-    def handler_for_each_user_df(self, user_id):
+    @staticmethod
+    def check_lost_user(avg_after):
+        if avg_after == 0:
+            return True
+        else:
+            return False
+
+    def lost_items_calculation(self, delta):
+        if delta < self.avg_delta:
+            return self.avg_delta - delta
+        else:
+            return 0
+
+    def handler_for_each_user(self, user_id):
+        """Функция обрабатывает данные для каждого отдельного пользователя
+
+                Алгоритм работы:
+                1. Получаем время обращения в поддержку
+                2. Считаем кол-во объявлений пользователя за каждый месяц
+                3. Преобразуем данные во временные ряды до и после обращения в службу поддержки
+                4. Считаем метрики пользователя до и после обращения в поддержку
+                5.
+                """
 
         # Поолучаем время обращения в поддержку
         support_time = self.get_support_time(user_id)
 
-        delta = 'except_value'
+        # Считаем кол-во объявлений пользователя за месяц
+        count_month_dict = self.item_counter(user_id)
 
-        # Учитываем только случаи, когда человек обращался в поддержку один раз
-        if len(support_time) == 1:
+        # Преобразуем данные во временной ряд
+        interval_list = self.convert_to_ts(count_month_dict, support_time)
 
-            # Считаем кол-во объявлений пользователя за месяц
-            count_month_dict = self.item_counter(user_id)
+        delta, avg_after = self.metrics_calculation(interval_list)
 
-            # Преобразуем данные в временной ряд
-            ts = self.convert_to_ts(count_month_dict)
-            del count_month_dict
+        lost_user = self.check_lost_user(avg_after)
 
-            if ts.count() != 0:
+        lost_items = self.lost_items_calculation(delta)
 
-                # Разделяем временной ряд на промежутки до и после обращения
-                interval_list = self.group_by_section(ts, support_time)
-                del ts
+        # Получаем категорию обращения пользователя
+        ticket_category = self.support_df[self.support_df.user_id == user_id].iloc[0][2]
+        # Получаем подкатегорию обращения пользователя
+        ticket_subcategory = self.support_df[self.support_df.user_id == user_id].iloc[0][3]
 
-                # Считаем метрики пользователя
-                delta = self.solve_metrics(interval_list)
-                del interval_list
-
-        return delta
-
-    def handler_user_df(self, g_delta_met):
-        """Функция обрабатывает данные по объявлениям для каждого пользователя
-
-        1. Получаем время обращения в поддержку
-        2. Преобразуем данные во временной ряд
-        3. Разбиваем объявления на группы до/после
-        4. Считаем кол-во объявлений пользователя за месяц по периодам
-        5. Считаем метрики пользователя до и после обращения в поддержку
-
-        """
-
-        lost_users = 0
-        lost_items = 0
-
-        pool = Pool()
-        metrics_list = list(pool.map(self.handler_for_each_user_df, pd.unique(self.item_df['user_id'])))
-        pool.close()  # закрываем бассейн, он нам больше не нужен
-        pool.join()  # возвращаемся в реальный мир
-
-        except_value_count = metrics_list.count('except_value')
-
-        while 'except_value' in metrics_list:
-            metrics_list.remove('except_value')
-
-        for j in range(len(metrics_list)):
-            if metrics_list[j][0] < g_delta_met:
-                lost_items += metrics_list[j][0] + g_delta_met
-                if metrics_list[j][1] == 0:
-                    lost_users += 1
-
-        del metrics_list
-
-        user_count = len(pd.unique(self.item_df['user_id']))
-
-        return user_count, except_value_count, lost_items, lost_users
+        return lost_items, lost_user, ticket_category, ticket_subcategory
