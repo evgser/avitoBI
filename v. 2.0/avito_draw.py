@@ -184,61 +184,295 @@ class AvitoDraw2:
     def __init__(self, all_data):
         self.all_data = all_data
 
-    def lost_users_and_items_calculation(self):
-        """ Функция считает количество всех потерянных объявлений и пользователей и выводит их в консоль """
+    def data_handler_category(self):
+        """ Обрабатываем всю информацию и рисуем по ней графики """
+
+        # Инициализируем переменные для подсчёта количества всех пользователей по собственных категориям
+        users = 0
+        unhappy_users = 0
         lost_users = 0
         lost_items = 0
-        for i in range(len(self.all_data)):
 
-            if self.all_data[i][1] == "True":
-                lost_users += 1
-            lost_items += float(self.all_data[i][0])
-
-        print("Количество потерянных объявлений: ", lost_items)
-        print("Количество потерянных пользователей: ", lost_users)
-
-    def data_handler_category(self):
-        """"""
-
+        # Инициализируем словари для подсчёта метрик в каждой категории и подкатегории
         users_dict = {}
+        sub_users_dict = {}
+
         unhappy_users_dict = {}
+        sub_unhappy_users_dict = {}
+
         lost_users_dict = {}
+        sub_lost_users_dict = {}
+
         lost_items_dict = {}
+        sub_lost_items_dict = {}
+
         for i in range(len(self.all_data)):
 
-            # Считаем количество людей по категориям
+            # Считаем количество людей по категориям и подкатегориям
             if self.all_data[i][2] not in users_dict.keys():
+
                 users_dict.update({self.all_data[i][2]: 1})
+
+                sub_users_dict.update({self.all_data[i][2]: {self.all_data[i][3]: 1}})
+
             else:
                 users_dict.update({self.all_data[i][2]: users_dict[self.all_data[i][2]] + 1})
 
-            # Считаем количество недовольных людей по категориям
+                if self.all_data[i][3] not in sub_users_dict[self.all_data[i][2]].keys():
+                    sub_users_dict[self.all_data[i][2]].update({self.all_data[i][3]: 1})
+                else:
+                    numb = sub_users_dict[self.all_data[i][2]][self.all_data[i][3]] + 1
+                    sub_users_dict[self.all_data[i][2]].update({self.all_data[i][3]: numb})
+
+            # Считаем количество недовольных людей по категориям и подкатегориям
             if float(self.all_data[i][0]) > 0:
+
                 if self.all_data[i][2] not in unhappy_users_dict.keys():
                     unhappy_users_dict.update({self.all_data[i][2]: 1})
+
+                    sub_unhappy_users_dict.update({self.all_data[i][2]: {self.all_data[i][3]: 1}})
                 else:
                     unhappy_users_dict.update({self.all_data[i][2]: unhappy_users_dict[self.all_data[i][2]] + 1})
 
-            # Cчитаем количество потерянных пользователей
-            if self.all_data[i][1]:
-                pass
+                    if self.all_data[i][3] not in sub_unhappy_users_dict[self.all_data[i][2]].keys():
+                        sub_unhappy_users_dict[self.all_data[i][2]].update({self.all_data[i][3]: 1})
+                    else:
+                        numb = sub_unhappy_users_dict[self.all_data[i][2]][self.all_data[i][3]] + 1
+                        sub_unhappy_users_dict[self.all_data[i][2]].update({self.all_data[i][3]: numb})
 
+            # Считаем количество потерянных пользователей и подкатегориям
+            if self.all_data[i][1] == "True":
+                if self.all_data[i][2] not in lost_users_dict.keys():
+                    lost_users_dict.update({self.all_data[i][2]: 1})
 
-        self.plot(unhappy_users_dict)
-        print(lost_users_dict)
+                    sub_lost_users_dict.update({self.all_data[i][2]: {self.all_data[i][3]: 1}})
+                else:
+                    lost_users_dict.update({self.all_data[i][2]: lost_users_dict[self.all_data[i][2]] + 1})
 
-    def plot(self, data_dict):
+                    if self.all_data[i][3] not in sub_lost_users_dict[self.all_data[i][2]].keys():
+                        sub_lost_users_dict[self.all_data[i][2]].update({self.all_data[i][3]: 1})
+                    else:
+                        numb = sub_lost_users_dict[self.all_data[i][2]][self.all_data[i][3]] + 1
+                        sub_lost_users_dict[self.all_data[i][2]].update({self.all_data[i][3]: numb})
+
+            # Считаем количество потерянных объявлений и подкатегориям
+            if float(self.all_data[i][0]) > 0:
+                if self.all_data[i][2] not in lost_items_dict.keys():
+                    lost_items_dict.update({self.all_data[i][2]: float(self.all_data[i][0])})
+
+                    sub_lost_items_dict.update({self.all_data[i][2]: {self.all_data[i][3]: float(self.all_data[i][0])}})
+                else:
+                    numb = float(self.all_data[i][0]) + lost_items_dict[self.all_data[i][2]]
+                    lost_items_dict.update({self.all_data[i][2]: numb})
+
+                    numb_2 = float(self.all_data[i][0])
+                    if self.all_data[i][3] not in sub_lost_items_dict[self.all_data[i][2]].keys():
+                        sub_lost_items_dict[self.all_data[i][2]].update({self.all_data[i][3]: numb_2})
+                    else:
+                        numb_3 = sub_lost_items_dict[self.all_data[i][2]][self.all_data[i][3]] + numb_2
+                        sub_lost_items_dict[self.all_data[i][2]].update({self.all_data[i][3]: numb_3})
+
+        # Считаем количество пользователей в собственных категориях
+        for key in users_dict.keys():
+            users += users_dict[key]
+
+            if key in unhappy_users_dict.keys():
+                unhappy_users += unhappy_users_dict[key]
+
+            if key in lost_users_dict.keys():
+                lost_users += lost_users_dict[key]
+
+            if key in lost_items_dict.keys():
+                lost_items += lost_items_dict[key]
+
+        # Выводим информацию по количеству пользователей в собственных категориях
+        print("Количество всех обработанных пользователей", users)
+        print("Количество недовольных пользователей: ", unhappy_users)
+        print("Количество потерянных пользователей: ", lost_users)
+        print("Количество потерянных объявлений: ", lost_items)
+
+        # Инициализируем словари отношений
+        unhappy_slash_users = {}
+        lost_items_slash_users = {}
+        lost_items_slash_unhappy = {}
+
+        unhappy_slash_lost_users = {}
+        lost_items_slash_lost_users = {}
+        lost_users_slash_users = {}
+
+        # Считаем отношения по категориям
+        for key in users_dict.keys():
+
+            if key in unhappy_users_dict.keys():
+
+                unhappy_slash_users.update({key: unhappy_users_dict[key] / users_dict[key]})
+
+            if key in lost_items_dict.keys():
+
+                lost_items_slash_users.update({key: lost_items_dict[key] / users_dict[key]})
+                lost_items_slash_unhappy.update({key: lost_items_dict[key] / unhappy_users_dict[key]})
+
+                lost_users_slash_users.update({key: lost_users_dict[key] / users_dict[key]})
+                unhappy_slash_lost_users.update({key: unhappy_users_dict[key] / lost_users_dict[key]})
+                lost_items_slash_lost_users.update({key: lost_items_dict[key] / lost_users_dict[key]})
+
+        # Отрисовываем первый слайд (категории)
+        self.double_barh_plot(users_dict, unhappy_users_dict, x=7.9, y=3.4, xlabel='Количество пользователей',
+                              legend=('Все пользователи', 'Недовольные пользователи'))
+        self.barh_plot(lost_items_dict, x=7.9, y=3.4, xlabel='Количество потерянных объявлений')
+
+        # Отрисовываем первый слайд (отношения)
+        self.double_simple_plot(lost_items_slash_users, lost_items_slash_unhappy)
+        self.simple_plot(unhappy_slash_users)
+
+        """
+        # Отрисовываем первый слайд (подкатегории)
+        self.double_barh_plot(sub_users_dict['Блокировки и отклонения'],
+                              sub_unhappy_users_dict['Блокировки и отклонения'],
+                              x=5.3, y=2, xlabel='Количество пользователей')
+        self.barh_plot(sub_lost_items_dict['Блокировки и отклонения'],
+                       x=5.3, y=2, xlabel='Количество потерянных объявлений')
+
+        # Отрисовываем первый слайд (подкатегории) - альтернативный сценарий
+        self.double_barh_plot(sub_users_dict['Работа с объявлениями и личным кабинетом'],
+                              sub_unhappy_users_dict['Работа с объявлениями и личным кабинетом'],
+                              xlabel='Количество пользователей')
+        self.barh_plot(sub_lost_items_dict['Работа с объявлениями и личным кабинетом'],
+                       x=8, xlabel='Количество потерянных объявлений')
+        """
+        # Отрисовываем второй слайд (категории)
+        self.double_barh_plot(users_dict, lost_users_dict, x=10, y=3.4, xlabel='Количество пользователей',
+                              legend=('Все пользователи', 'Потерянные пользователи'))
+
+        # Отрисовываем второй слайд (отношения)
+        self.simple_plot(lost_users_slash_users)
+        self.simple_plot(unhappy_slash_lost_users)
+        self.simple_plot(lost_items_slash_lost_users)
+
+    @staticmethod
+    def double_barh_plot(data_dict, data_dict_2, x=7.0, y=3.0, xlabel='', title='', legend=()):
+        """ Функция отрисовки горизонтального бара с 2 наборами входных переменных
+
+         x - длина полотна
+         y - ширина полотна
+
+         """
 
         fig, ax = plt.subplots()
-        fig.set_size_inches(7, 3, forward=True)
+        # Задаём размер области отрисовки
+        fig.set_size_inches(x, y, forward=True)
 
+        # Чистим данные от незначительных обращений
+        data_dict = {k: v for k, v in data_dict.items() if v > 10}
+
+        # Сортируем данные для графика
         sorted_list = sorted(data_dict.items(), key=operator.itemgetter(1))
 
+        sorted_list_2 = []
+        for i in range(len(sorted_list)):
+            if sorted_list[i][0] in data_dict_2.keys():
+                sorted_list_2.append((sorted_list[i][0], data_dict_2[sorted_list[i][0]]))
+            else:
+                sorted_list_2.append((sorted_list[i][0], 0))
+
+        # Формируем данные для графика
+        group_names = list(sorted_list[i][0] for i in range(len(sorted_list)))
+        group_data = list(sorted_list[i][1] for i in range(len(sorted_list)))
+        group_data_2 = list(sorted_list_2[i][1] for i in range(len(sorted_list)))
+
+        # Отрисовываем график
+        p1 = ax.barh(group_names, group_data, height=0.4)
+        p2 = ax.barh(group_names, group_data_2, height=0.4)
+
+        # Задаём заголовок и подпись, если переданы
+        if xlabel != '':
+            ax.set_xlabel(xlabel)
+        if title != '':
+            ax.set_title(title)
+
+        if len(legend) != 0:
+            plt.legend((p1[0], p2[0]), legend, loc='lower right')
+
+        plt.show()
+
+    @staticmethod
+    def barh_plot(data_dict, x=7.0, y=3.0, xlabel='', title=''):
+        """ Функция отрисовки горизонтального бара с 1 набором входных переменных
+
+         x - длина полотна
+         y - ширина полотна
+
+         """
+
+        fig, ax = plt.subplots()
+        # Задаём размер области отрисовки
+        fig.set_size_inches(x, y, forward=True)
+
+        # Чистим данные от незначительных обращений
+        data_dict = {k: v for k, v in data_dict.items() if v > 10}
+
+        # Сортируем данные для графика
+        sorted_list = sorted(data_dict.items(), key=operator.itemgetter(1))
+
+        # Формируем данные для графика
         group_names = list(sorted_list[i][0] for i in range(len(sorted_list)))
         group_data = list(sorted_list[i][1] for i in range(len(sorted_list)))
 
+        # Отрисовываем график
         ax.barh(group_names, group_data, height=0.4)
 
-        ax.set_xlabel('Performance')
-        ax.set_title('How fast do you want to go today?')
+        # Задаём заголовок и подпись, если переданы
+        if xlabel != '':
+            ax.set_xlabel(xlabel)
+        if title != '':
+            ax.set_title(title)
+
+        plt.show()
+
+    @staticmethod
+    def double_simple_plot(lost_items_slash_users, lost_items_slash_unhappy):
+        """ Отрисовка потерянных объявлений ко всем пользователям и к недовольным по категориям """
+
+        y1 = [i for i in lost_items_slash_users.values()]
+        y2 = [i for i in lost_items_slash_unhappy.values()]
+
+        x = list(lost_items_slash_users.keys())
+
+        print("Пояснение к графикам отношений:")
+        for i in range(len(x)):
+            print(i, ": ", x[i])
+
+        fig, ax = plt.subplots()
+        p1 = ax.plot(x, y1)
+        p2 = ax.plot(x, y2)
+
+        ax.yaxis.grid(True)
+        ax.set_xlabel('Категория')
+        ax.set_ylabel('Отношение')
+
+        # add x-tick labels
+        plt.setp(ax, xticks=[x for x in range(len(x))], xticklabels=[i for i in range(len(x))])
+
+        plt.legend((p1[0], p2[0]), ('потерянные объяв./все польз.', 'потерянные объяв./недовольные польз.'), loc='upper right')
+
+        plt.show()
+
+    @staticmethod
+    def simple_plot(dict_slash_dict):
+        """ Отрисовка отношения недовольных пользователей к довольным по категориям"""
+
+        y = [i for i in dict_slash_dict.values()]
+
+        x = list(dict_slash_dict.keys())
+
+        fig, ax = plt.subplots()
+        ax.plot(x, y)
+
+        ax.yaxis.grid(True)
+        ax.set_xlabel('Категория')
+        ax.set_ylabel('Отношение')
+
+        # add x-tick labels
+        plt.setp(ax, xticks=[x for x in range(len(x))], xticklabels=[i for i in range(len(x))])
+
         plt.show()

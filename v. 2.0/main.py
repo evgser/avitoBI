@@ -92,10 +92,7 @@ if __name__ == '__main__':
         # Создание класса для отрисовки графиков
         draw = ad.AvitoDraw2(data_list)
 
-        # Получаем потери в цифрах
-        draw.lost_users_and_items_calculation()
-
-        # тест
+        # Обрабатываем все данные и рисуем графики
         draw.data_handler_category()
 
 
